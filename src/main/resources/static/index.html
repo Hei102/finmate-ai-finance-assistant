@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinMate Finance Agent</title>
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="/styles.css?v=market-workspace-20260930">
+</head>
+<body>
+<div class="auth-shell" id="authShell" hidden>
+    <section class="auth-panel">
+        <p class="eyebrow">FinMate Account</p>
+        <h1 id="authTitle">登录你的账号</h1>
+        <p class="hero-text">每个账号都有自己的聊天会话、收藏标的和财报报告。</p>
+
+        <form class="auth-form" id="loginForm">
+            <label>
+                <span>账号</span>
+                <input id="loginUsername" type="text" autocomplete="username" placeholder="demo_user">
+            </label>
+            <label>
+                <span>密码</span>
+                <input id="loginPassword" type="password" autocomplete="current-password" placeholder="至少 6 位">
+            </label>
+            <button type="submit" class="primary-btn">登录</button>
+        </form>
+
+        <form class="auth-form" id="registerForm" hidden>
+            <label>
+                <span>账号</span>
+                <input id="registerUsername" type="text" autocomplete="username" placeholder="字母、数字、下划线">
+            </label>
+            <label>
+                <span>昵称</span>
+                <input id="registerNickname" type="text" autocomplete="nickname" placeholder="可选">
+            </label>
+            <label>
+                <span>密码</span>
+                <input id="registerPassword" type="password" autocomplete="new-password" placeholder="至少 6 位">
+            </label>
+            <button type="submit" class="primary-btn">注册并进入</button>
+        </form>
+
+        <button type="button" class="ghost-btn auth-switch" id="authSwitchBtn">还没有账号？去注册</button>
+    </section>
+</div>
+
+<div class="app-shell" id="appShell" hidden>
+    <aside class="side-nav">
+        <div>
+            <p class="eyebrow">FinMate</p>
+            <h2>财经工作台</h2>
+        </div>
+        <nav class="nav-list">
+            <button type="button" class="nav-item active" data-page="market">今日市场</button>
+            <button type="button" class="nav-item" data-page="workspace">智能分析</button>
+            <button type="button" class="nav-item" data-page="reports">财报分析</button>
+        </nav>
+        <div class="side-user">
+            <span id="userBadge">未登录</span>
+            <button type="button" class="ghost-btn" id="logoutBtn">退出登录</button>
+        </div>
+    </aside>
+
+    <div class="page-shell app-content">
+        <section class="page-section active" id="marketPage">
+            <header class="hero market-hero">
+                <div class="hero-copy">
+                    <p class="eyebrow">Market Radar</p>
+                    <h1>今日市场</h1>
+                    <p class="hero-text">
+                        看指数 K 线、重要新闻、风险清单和智能观察方向。这里只做研究辅助，不构成投资建议。
+                    </p>
+                </div>
+                <div class="market-control panel">
+                    <form id="marketForm" class="market-form">
+                        <label>
+                            <span>关注代码</span>
+                            <input id="marketSymbolInput" type="text" value="sh000001" placeholder="sh000001 / sz399001 / sz000001" aria-describedby="marketSymbolHint">
+                            <small id="marketSymbolHint">上证指数 sh000001；平安银行 sz000001；其他股票也可输入六位代码。</small>
+                        </label>
+                        <button type="submit" class="primary-btn">刷新市场</button>
+                    </form>
+                    <p id="marketDataStatus">等待加载</p>
+                    <p id="marketUpdatedAt">页面刷新：-</p>
+                </div>
+            </header>
+
+            <div class="market-layout">
+                <main class="market-grid">
+                    <section class="panel market-indices">
+                        <div class="panel-head">
+                            <div>
+                                <h2>指数概览</h2>
+                                <p>上证、深成指、创业板指的实时快照。</p>
+                            </div>
+                        </div>
+                        <div class="market-index-list" id="marketIndexList"></div>
+                    </section>
+
+                    <section class="panel market-chart-panel">
+                        <div class="panel-head">
+                            <div>
+                                <h2 id="marketChartTitle">K 线</h2>
+                                <p id="marketChartMeta">日线走势，红涨绿跌。</p>
+                            </div>
+                        </div>
+                        <canvas id="klineCanvas" class="kline-canvas" height="360"></canvas>
+                    </section>
+
+                    <section class="panel market-news">
+                        <div class="panel-head">
+                            <div>
+                                <h2>重大新闻</h2>
+                                <p>聚合可能影响市场情绪的宏观和产业线索。</p>
+                            </div>
+                        </div>
+                        <div class="market-news-list" id="marketNewsList"></div>
+                    </section>
+
+                    <section class="panel market-ideas">
+                        <div class="panel-head">
+                            <div>
+                                <h2>智能观察清单</h2>
+                                <p>偏研究方向，不是买入建议。</p>
+                            </div>
+                        </div>
+                        <article class="ai-insight" id="marketAiInsight">加载中...</article>
+                        <div class="stock-idea-list" id="stockIdeasList"></div>
+                    </section>
+
+                    <section class="panel market-risks">
+                        <div class="panel-head">
+                            <div>
+                                <h2>风险提醒</h2>
+                                <p>做决策前先过一遍。</p>
+                            </div>
+                        </div>
+                        <div class="risk-list" id="marketRiskList"></div>
+                    </section>
+                </main>
+
+                <aside class="panel market-assistant">
+                    <div class="panel-head">
+                        <div>
+                            <h2>市场追问</h2>
+                            <p>基于当前页面已经加载的信息回答。</p>
+                        </div>
+                    </div>
+                    <div class="market-context-badge" id="marketContextBadge">等待市场数据</div>
+                    <div class="market-assistant-board" id="marketAssistantBoard">
+                        <div class="market-assistant-message agent">刷新市场后，可以直接问：这些新闻可能影响哪些方向？K 线有什么风险？观察清单应该先看什么？</div>
+                    </div>
+                    <form class="market-assistant-form" id="marketAssistantForm" onsubmit="event.preventDefault(); return false;">
+                        <textarea id="marketAssistantInput" rows="4" placeholder="问当前页面：今天新闻更偏利好还是风险？"></textarea>
+                        <button type="button" class="primary-btn" id="marketAssistantSubmitBtn">追问</button>
+                    </form>
+                </aside>
+            </div>
+        </section>
+
+        <section class="page-section" id="workspacePage">
+            <header class="hero">
+                <div class="hero-copy">
+                    <p class="eyebrow">Spring Boot + LangChain4j + MySQL + MongoDB</p>
+                    <h1>FinMate 财经分析 Agent</h1>
+                    <p class="hero-text">
+                        与 AI 探讨财经问题，保存关注的标的，继续查阅财报和原文。
+                    </p>
+                </div>
+                <div class="hero-metrics">
+                    <article class="metric-card">
+                        <span>收藏标的</span>
+                        <strong id="favoriteCount">0</strong>
+                    </article>
+                    <article class="metric-card">
+                        <span>聊天会话</span>
+                        <strong id="chatSessionCount">0</strong>
+                    </article>
+                </div>
+            </header>
+
+            <main class="layout-grid">
+                <section class="panel panel-chat">
+                    <div class="panel-head">
+                        <div>
+                            <h2>智能对话</h2>
+                            <p>每个会话都有独立记忆，切换主题不会串台。</p>
+                        </div>
+                        <div class="quick-actions">
+                            <button class="ghost-btn" data-prompt="ETF 是什么？">ETF 解释</button>
+                            <button class="ghost-btn" data-prompt="帮我生成 5 道基金研究岗面试题">面试题</button>
+                            <button class="ghost-btn" data-prompt="帮我分析一下新能源行业，偏面试准备">行业分析</button>
+                        </div>
+                    </div>
+
+                    <div class="session-panel">
+                        <div class="session-panel-head">
+                            <div>
+                                <span>当前会话</span>
+                                <strong id="currentSessionTitle">未选择会话</strong>
+                            </div>
+                            <div class="session-actions">
+                                <button type="button" class="secondary-btn" id="newSessionBtn">新建聊天</button>
+                            </div>
+                        </div>
+                        <div class="session-list" id="chatSessionList"></div>
+                    </div>
+
+                    <div class="chat-board" id="chatBoard"></div>
+
+                    <form class="chat-form" id="chatForm">
+                        <textarea id="chatInput" rows="3" placeholder="比如：帮我解释一下 PE 和 PB 的区别"></textarea>
+                        <div class="chat-actions">
+                            <span id="memoryBadge">会话ID：-</span>
+                            <button type="submit" class="primary-btn">发送消息</button>
+                        </div>
+                    </form>
+                </section>
+
+                <aside class="panel panel-favorites">
+                    <div class="panel-head">
+                        <div>
+                            <h2>收藏标的</h2>
+                            <p>只保存和展示当前账号关注的股票、基金和行业主题。</p>
+                        </div>
+                    </div>
+
+                    <form class="favorite-form" id="favoriteForm">
+                        <input id="favoriteName" type="text" placeholder="标的名称">
+                        <input id="favoriteSymbol" type="text" placeholder="代码或简称">
+                        <select id="favoriteCategory">
+                            <option value="股票">股票</option>
+                            <option value="基金">基金</option>
+                            <option value="行业">行业</option>
+                            <option value="主题">主题</option>
+                        </select>
+                        <textarea id="favoriteNote" rows="3" placeholder="为什么收藏它？"></textarea>
+                        <button type="submit" class="secondary-btn">加入收藏</button>
+                    </form>
+
+                    <div class="collection-list" id="favoriteList"></div>
+                </aside>
+
+            </main>
+        </section>
+
+        <section class="page-section" id="reportsPage">
+            <header class="hero report-hero">
+                <div class="hero-copy">
+                    <p class="eyebrow">Financial Reports</p>
+                    <h1>财报分析</h1>
+                    <p class="hero-text">
+                        从你的收藏股票里选择标的，拉取最近财报公告，并生成可保存的研究报告。
+                    </p>
+                </div>
+                <div class="panel report-status-panel">
+                    <h2>当前流程</h2>
+                    <p id="reportWorkflowStatus">先在“智能分析”里收藏股票，再回到这里做财报分析。</p>
+                </div>
+            </header>
+
+            <main class="report-layout">
+                <section class="panel report-stock-panel">
+                    <div class="panel-head">
+                        <div>
+                            <h2>我的收藏股票</h2>
+                            <p>只展示当前账号收藏的股票代码。</p>
+                        </div>
+                    </div>
+                    <div class="report-stock-list" id="reportStockList"></div>
+                </section>
+
+                <section class="panel report-list-panel">
+                    <div class="panel-head">
+                        <div>
+                            <h2>财报公告</h2>
+                            <p id="reportListStatus">请选择一只收藏股票。</p>
+                        </div>
+                    </div>
+                    <div class="financial-report-list" id="financialReportList"></div>
+                </section>
+
+                <section class="panel report-analysis-panel">
+                    <div class="panel-head">
+                        <div>
+                            <h2>AI 分析报告</h2>
+                            <p>读取 PDF 正文后生成分析，附读取范围与页码。长财报选取重点内容，扫描件暂不支持。</p>
+                        </div>
+                    </div>
+                    <article class="financial-report-selected" id="selectedFinancialReport">
+                        请选择一份财报公告。
+                    </article>
+                    <button type="button" class="primary-btn" id="analyzeFinancialReportBtn" disabled>生成分析报告</button>
+                    <article class="financial-report-output" id="financialReportOutput">
+                        <h3>最新财报分析</h3>
+                        <p>生成后的报告会显示在这里，并保存到当前账号。</p>
+                    </article>
+                    <form class="chat-form" id="reportRagForm">
+                        <h3>基于原文提问</h3>
+                        <p>首次提问会准备当前财报，可能需要几分钟。每次请写明问题，回答附参考原文。</p>
+                        <label for="reportRagQuestion">关于当前所选财报的问题</label>
+                        <textarea id="reportRagQuestion" rows="3" maxlength="2000" required placeholder="例如：本报告期经营现金流变化的原因是什么？"></textarea>
+                        <button type="submit" class="secondary-btn" id="reportRagSubmit" disabled>查询财报原文</button>
+                    </form>
+                    <article class="financial-report-output" id="reportRagOutput" aria-live="polite"></article>
+                </section>
+
+                <section class="panel report-history-panel">
+                    <div class="panel-head">
+                        <div>
+                            <h2>财报分析历史</h2>
+                            <p>当前账号生成过的财报报告。</p>
+                        </div>
+                    </div>
+                    <div class="financial-report-history" id="financialReportHistory"></div>
+                </section>
+            </main>
+        </section>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="/app.js?v=market-workspace-20260930"></script>
+</body>
+</html>

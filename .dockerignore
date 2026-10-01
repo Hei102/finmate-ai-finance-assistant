@@ -1,0 +1,11 @@
+.git
+.github
+.idea
+.m2repo
+target
+.env
+.env.*
+!.env.example
+settings-local.xml
+*.iml
+*.log

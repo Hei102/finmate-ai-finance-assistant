@@ -1,0 +1,82 @@
+name: finmate
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${FINMATE_PORT:-8080}:8080"
+    environment:
+      SERVER_PORT: "8080"
+      DEEPSEEK_API_KEY: "${DEEPSEEK_API_KEY:-}"
+      DEEPSEEK_BASE_URL: "${DEEPSEEK_BASE_URL:-https://api.deepseek.com}"
+      DEEPSEEK_MODEL: "${DEEPSEEK_MODEL:-deepseek-chat}"
+      MYSQL_URL: "jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-finance_agent_db}?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true"
+      MYSQL_USERNAME: "${MYSQL_USERNAME:-finmate}"
+      MYSQL_PASSWORD: "${MYSQL_PASSWORD:?请在 .env 中设置 MYSQL_PASSWORD}"
+      MONGODB_URI: "mongodb://mongo:27017/${MONGODB_DATABASE:-chat_memory_db}"
+      FINMATE_RAG_ENABLED: "${FINMATE_RAG_ENABLED:-false}"
+      FINMATE_RAG_QDRANT_URL: http://qdrant:6333
+      FINMATE_RAG_QDRANT_API_KEY: "${FINMATE_RAG_QDRANT_API_KEY:-}"
+      FINMATE_RAG_COLLECTION: "${FINMATE_RAG_COLLECTION:-finmate_reports_v1}"
+      FINMATE_RAG_EMBEDDING_API_KEY: "${FINMATE_RAG_EMBEDDING_API_KEY:-}"
+      FINMATE_RAG_EMBEDDING_URL: "${FINMATE_RAG_EMBEDDING_URL:-https://dashscope.aliyuncs.com/compatible-mode/v1/embeddings}"
+      FINMATE_RAG_EMBEDDING_MODEL: "${FINMATE_RAG_EMBEDDING_MODEL:-text-embedding-v4}"
+      FINMATE_RAG_DIMENSIONS: "${FINMATE_RAG_DIMENSIONS:-1024}"
+      FINMATE_RAG_MIN_SCORE: "${FINMATE_RAG_MIN_SCORE:-0.45}"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    restart: unless-stopped
+
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: "${MYSQL_DATABASE:-finance_agent_db}"
+      MYSQL_USER: "${MYSQL_USERNAME:-finmate}"
+      MYSQL_PASSWORD: "${MYSQL_PASSWORD:?请在 .env 中设置 MYSQL_PASSWORD}"
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:?请在 .env 中设置 MYSQL_ROOT_PASSWORD}"
+      TZ: Asia/Shanghai
+    volumes:
+      - finmate_mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$${MYSQL_ROOT_PASSWORD} --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    restart: unless-stopped
+
+  mongo:
+    image: mongo:8.0
+    volumes:
+      - finmate_mongo:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "quit(db.adminCommand('ping').ok ? 0 : 2)"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    restart: unless-stopped
+
+  qdrant:
+    image: qdrant/qdrant:v1.17.0
+    volumes:
+      - finmate_qdrant:/qdrant/storage
+    restart: unless-stopped
+
+volumes:
+  finmate_mysql:
+  finmate_mongo:
+  finmate_qdrant:
